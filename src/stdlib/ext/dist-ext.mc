@@ -189,7 +189,7 @@ let betabinPmf = lam n:Int. lam a: Float. lam b: Float. lam x:Int.
 
 -- Reciprocal (or log uniform) distribution)
 let reciprocalSample : Float -> Float -> Float = lam a. lam b.
-  let logSample = uniformContinuousSample (log a) (log a) in
+  let logSample = uniformContinuousSample (log a) (log b) in
   exp logSample
 
 let reciprocalPdf : Float -> Float -> Float -> Float = lam a. lam b. lam x.
