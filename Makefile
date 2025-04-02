@@ -57,11 +57,11 @@ uninstall-boot:
 
 .PHONY: lint
 lint:
-	misc/scripts/with-tmp-dir dune fmt --root=src/boot/ --build-dir="{}"
+	misc/scripts/with-tmp-dir dune build @fmt --root=src/boot/ --build-dir="{}"
 
 .PHONY: fix
 fix:
-	misc/scripts/with-tmp-dir dune fmt --root=src/boot/ --build-dir="{}" --auto-promote
+	misc/scripts/with-tmp-dir dune fmt --root=src/boot/ --build-dir="{}"
 
 
 # Bootstrapping the `mi` executable
@@ -96,12 +96,12 @@ uninstall:
 # or `misc/watch` to autorun tests when files change)
 
 .PHONY: test test-all test-quick
-test test-all test-quick:
+test test-all test-quick: lint
 test:
 	+ exec misc/test --bootstrapped smart
 
 test-all:
-	+ exec misc/test --bootstrapped all
+	+ exec misc/test --bootstrapped --non-interactive all
 
 test-quick:
 	+ exec misc/test --bootstrapped
