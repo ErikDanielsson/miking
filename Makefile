@@ -22,6 +22,8 @@ else
 SET_OCAMLPATH=OCAMLPATH=$(current_dir)/build/lib
 endif
 
+j_flag := $(filter -j%, $(MAKEFLAGS))
+
 .PHONY: default
 default: bootstrap
 
@@ -57,11 +59,11 @@ uninstall-boot:
 
 .PHONY: lint
 lint:
-	misc/scripts/with-tmp-dir dune fmt --root=src/boot/ --build-dir="{}"
+	misc/scripts/with-tmp-dir dune build @fmt --root=src/boot/ --build-dir="{}"
 
 .PHONY: fix
 fix:
-	misc/scripts/with-tmp-dir dune fmt --root=src/boot/ --build-dir="{}" --auto-promote
+	misc/scripts/with-tmp-dir dune fmt --root=src/boot/ --build-dir="{}"
 
 
 # Bootstrapping the `mi` executable
@@ -96,15 +98,15 @@ uninstall:
 # or `misc/watch` to autorun tests when files change)
 
 .PHONY: test test-all test-quick
-test test-all test-quick:
+test test-all test-quick: lint
 test:
-	+ exec misc/test --bootstrapped smart
+	+ exec misc/test $(j_flag) --bootstrapped smart
 
 test-all:
-	+ exec misc/test --bootstrapped all
+	+ exec misc/test $(j_flag) --bootstrapped --non-interactive all
 
 test-quick:
-	+ exec misc/test --bootstrapped
+	+ exec misc/test $(j_flag) --bootstrapped
 
 test-info:
 	@echo "Tasks run:" `find build/src/ -name '*.out' | wc -l`

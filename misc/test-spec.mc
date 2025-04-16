@@ -17,6 +17,7 @@ include "map.mc"
 include "set.mc"
 include "common.mc"
 include "tuple.mc"
+include "cuda/sys.mc"
 
 -- A path representing some file in the repository, either source or
 -- generated through some command.
@@ -754,9 +755,15 @@ mexpr
 testMain
   [ { testColl "accelerate"
     with checkCondition = lam.
-      if and (sysCommandExists "nvcc") (sysCommandExists "futhark")
+      if scallb [
+        lam. sysCommandExists "nvcc",
+        lam. sysCommandExists "futhark",
+        -- NOTE(johnwikman, 2025-03-28): Checking 0 < n_devices and that we can
+        -- run CUDA programs
+        lam. optionMapOr false (lti 0) (cudaGetDeviceCount ())
+      ]
       then ConditionsMet ()
-      else ConditionsImpossible () -- TODO(vipa, 2023-04-25): figure out how to check if we have nvidia hardware
+      else ConditionsImpossible ()
     , exclusions = lam api.
       -- NOTE(vipa, 2023-04-25): Accelerate isn't supported in
       -- interpreted mode, and compiled mode is already tested via the
@@ -814,9 +821,6 @@ testMain
         , "stdlib/ext/ext-test.mc"
         , "stdlib/ext/local-search.mc"
         , "stdlib/ext/arr-ext.mc"
-        , "stdlib/ext/cblas-ext.mc"
-        , "stdlib/ext/vec-ext.mc"
-        , "stdlib/ext/mat-ext.mc"
         , "stdlib/ext/reflection-ext.mc"
         , "test/examples/external/ext-list-map.mc"
         , "test/examples/external/ext-list-concat-map.mc"
@@ -995,6 +999,7 @@ testMain
       let failures =
         [ "stdlib/effect.mc"
         , "test/mexpr/pprint-eval.mc"
+        , "stdlib/optparse-applicative.mc"
         ] in
       let files = excludePaths files failures in
 
@@ -1020,19 +1025,6 @@ testMain
         ["test/meta/recursive-let.mc"] in
       api.mark fail files;
       api.mark interpretFail (api.strsToPaths ["test/meta/recursive-let.mc"])
-    }
-
-  , { testColl "ipopt"
-    with checkCondition = lam.
-      if eqi 0 (command "ocamlfind query ipoptml >/dev/null 2>&1")
-      then ConditionsMet ()
-      else ConditionsUnmet ()
-    , conditionalInclusions = lam api.
-      api.mark defaultTasks
-        (api.glob ["stdlib", "ipopt"] (IncludeSubs ()) (SuffixFile ".mc"));
-      api.mark {defaultTasks with interpret = Fail ()} (api.strsToPaths
-        [ "stdlib/ipopt/ipopt.mc"
-        ] )
     }
 
   , { testColl "sundials"
@@ -1075,6 +1067,9 @@ testMain
         [ "stdlib/ext/math-ext.mc"
         , "stdlib/ext/matrix-ext.mc"
         , "stdlib/ext/dist-ext.mc"
+        , "stdlib/ext/cblas-ext.mc"
+        , "stdlib/ext/mat-ext.mc"
+        , "stdlib/ext/vec-ext.mc"
         ] )
     }
 
