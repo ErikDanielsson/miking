@@ -347,6 +347,10 @@ recursive let json2string: JsonValue -> String = lam value.
   end
 end
 
+let getJsonLn: JsonValue -> String = lam value.
+  let jStr = json2string value in
+  concat jStr "\n"  
+
 recursive let _printJson: JsonValue -> () = lam value.
   switch value
   case JsonObject properties then
