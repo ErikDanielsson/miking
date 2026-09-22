@@ -1,0 +1,7 @@
+(executable
+ (name main)
+ (foreign_stubs
+  (language cxx)
+  (names mi_rng)
+  (flags (:standard -std=c++17)))
+ (link_flags (-cclib -lstdc++)))
