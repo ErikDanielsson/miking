@@ -72,6 +72,17 @@ install-mi-stats:
 uninstall-mi-stats:
 	misc/scripts/with-tmp-dir dune uninstall --root=src/mi-stats --build-dir="{}" --prefix=$(prefix) --libdir=$(ocamllibdir) ">/dev/null 2>&1"
 
+# The `mi-stats` library compiled to WebAssembly
+# Requires a C++ to WASM compiler -- `em++` (emscripten) by default
+# TODO(ErikDanielsson, 2026-09-26): Add exact comparison with ocaml
+# once we have the miking bindings
+
+EMXX ?= em++
+MI_STATS_WASM_DIR = $(current_dir)build/mi-stats-wasm
+
+.PHONY: mi-stats-wasm
+mi-stats-wasm:
+	EMXX=$(EMXX) src/mi-stats/wasm/build.fish $(MI_STATS_WASM_DIR)
 
 ## Formatting, checking and autoformatting respectively
 
