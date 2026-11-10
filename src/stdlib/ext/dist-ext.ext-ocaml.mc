@@ -45,31 +45,24 @@ let distExtMap =
       }
     ]),
     ("externalGammaLogPdf", [
-      { expr = "Owl_stats.gamma_logpdf",
-        ty = tyarrows_ [tyfloat_, otylabel_ "shape" tyfloat_, otylabel_ "scale" tyfloat_, tyfloat_],
-        libraries = ["owl"],
+      { expr = "Mi_stats.mi_gamma_lpdf",
+        ty = tyarrows_ [tyfloat_, tyfloat_, tyfloat_, tyfloat_],
+        libraries = ["mi_stats"],
         cLibraries = []
       }
     ]),
     ("externalGammaSample", [
-      { expr = "Owl_stats.gamma_rvs",
-        ty = tyarrows_ [otylabel_ "shape" tyfloat_, otylabel_ "scale" tyfloat_, tyfloat_],
-        libraries = ["owl"],
+      { expr = "Mi_stats.mi_gamma_rng_",
+        ty = tyarrows_ [tyfloat_, tyfloat_, tyfloat_],
+        libraries = ["mi_stats"],
         cLibraries = []
       }
     ]),
     ("externalGammaCdf", [
-      { expr = "Owl_stats.gamma_cdf",
-       ty = tyarrows_ [tyfloat_, otylabel_ "shape" tyfloat_, otylabel_ "scale" tyfloat_, tyfloat_],
-       libraries = ["owl"],
-       cLibraries = []
-       }
-    ]),
-    ("externalGammaPpf", [
-      { expr = "Owl_stats.gamma_ppf",
-      ty = tyarrows_ [tyfloat_, otylabel_ "shape" tyfloat_, otylabel_ "scale" tyfloat_, tyfloat_],
-      libraries =["owl"],
-      cLibraries = []
+      { expr = "Mi_stats.mi_gamma_cdf",
+        ty = tyarrows_ [tyfloat_, tyfloat_, tyfloat_, tyfloat_],
+        libraries = ["mi_stats"],
+        cLibraries = []
       }
     ]),
     ("externalBinomialLogPmf", [
@@ -183,10 +176,11 @@ let distExtMap =
           Random.init seed;
           Owl_base_stats_prng.init seed;
           Owl_stats_prng.sfmt_seed seed;
-          Owl_stats_prng.ziggurat_init ()
+          Owl_stats_prng.ziggurat_init ();
+          Mi_stats.mi_set_seed seed
         )",
         ty = tyarrows_ [tyint_, otyunit_],
-        libraries = ["owl"],
+        libraries = ["owl", "mi_stats"],
         cLibraries = []
       }
     ])

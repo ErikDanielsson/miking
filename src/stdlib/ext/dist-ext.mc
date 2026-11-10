@@ -20,21 +20,21 @@ let chi2Cdf = lam df:Int. lam x:Float.
 let chi2Ppf = lam df:Int. lam q:Float.
   externalChi2Ppf q (int2float df)
 
--- Gamma
+-- Gamma, with shape and rate as in Stan. Outside the support (0, inf), the
+-- log-pdf is -inf and the cdf is 0 below and 1 above, as Stan rejects them.
 external externalGammaLogPdf : Float -> Float -> Float -> Float
 external externalGammaSample ! : Float -> Float -> Float
 external externalGammaCdf : Float -> Float -> Float -> Float
-external externalGammaPpf : Float -> Float -> Float -> Float
-let gammaPdf = lam shape:Float. lam scale:Float. lam x:Float.
-  exp (externalGammaLogPdf x shape scale)
-let gammaLogPdf = lam shape:Float. lam scale:Float. lam x:Float.
-  externalGammaLogPdf x shape scale
-let gammaSample = lam shape:Float. lam scale:Float.
-  externalGammaSample shape scale
-let gammaCdf = lam shape:Float. lam scale:Float. lam x:Float.
-  externalGammaCdf x shape scale
-let gammaPpf = lam shape:Float. lam scale:Float. lam q:Float.
-  externalGammaPpf q shape scale
+let gammaLogPdf = lam shape:Float. lam rate:Float. lam x:Float.
+  if or (leqf x 0.) (eqf x inf) then negf inf
+  else externalGammaLogPdf x shape rate
+let gammaPdf = lam shape:Float. lam rate:Float. lam x:Float.
+  exp (gammaLogPdf shape rate x)
+let gammaSample = lam shape:Float. lam rate:Float.
+  externalGammaSample shape rate
+let gammaCdf = lam shape:Float. lam rate:Float. lam x:Float.
+  if ltf x 0. then 0.
+  else externalGammaCdf x shape rate
 
 -- Binomial and Bernoulli
 external externalBinomialLogPmf : Int -> Float -> Int -> Float
@@ -134,23 +134,6 @@ let uniformDiscretePdf : Int -> Int -> Int -> Float = lam a. lam b. lam x.
     else 0.
   else 0.
 
--- Discretized Gamma, n categories are used to approximate the continous distribution with equal probability for each category. The median is used to represent the average rate.
-let discretizedGammaSupport = lam shape:Float. lam scale:Float. lam n:Int.
-  let bins = (linspace 0. 1. (addi n 1)) in
-  let quantilesX = map (lam b. gammaPpf shape scale b) bins in
-  let medians = mapi (lam ind. lam x. gammaPpf shape scale (divf (addf (gammaCdf shape scale x) (gammaCdf shape scale (get quantilesX (addi ind 1)))) 2.)) (init quantilesX) in
-  let factor = divf (int2float n) (foldl addf 0. medians) in
-  let scaledMedians = map (lam e. mulf e factor) medians in
-  scaledMedians
-let discretizedGammaSample = lam shape:Float. lam scale:Float. lam n:Int.
-  let scaledMedians = discretizedGammaSupport shape scale n in
-  let ind = uniformDiscreteSample 0 (subi n 1) in
-  get scaledMedians ind
-let discretizedGammaLogPmf = lam shape:Float. lam scale:Float. lam n:Int. lam x:Float.
-  let support = discretizedGammaSupport shape scale n in
-  if any (lam s. eqfApprox 1e-12 x s) support then log (divf 1. (int2float n))
-  else negf inf
-
 -- Poisson
 let poissonLogPmf = lam lambda:Float. lam x:Int.
   subf (subf (mulf (int2float x) (log lambda)) lambda) (logFactorial x)
@@ -181,7 +164,7 @@ let exponentialPdf : Float -> Float -> Float = lam lambda. lam x.
 
 -- Negative Binomial
 let negativeBinomialSample : Int -> Float -> Int = lam n. lam p.
-  poissonSample (externalGammaSample (int2float n) (divf (subf 1. p) p))
+  poissonSample (externalGammaSample (int2float n) (divf p (subf 1. p)))
 let negativeBinomialLogPmf : Int -> Float -> Int -> Float = lam n. lam p. lam x.
   subf (addf (log (int2float n)) (externalBinomialLogPmf x (subf 1. p) (addi x n))) (log (int2float (addi n x)))
 let negativeBinomialPmf: Int -> Float -> Int -> Float = lam n. lam p. lam x.
@@ -292,11 +275,10 @@ utest chi2Cdf 4 4.1 with 0.6073585440572 using _eqf in
 utest chi2Ppf 3 0.95 with 7.8147279032512 using _eqf in
 
 -- Testing Gamma
-utest gammaPdf 1. 2. 1. with 0.303265329856 using _eqf in
-utest exp (gammaLogPdf 2. 3. 1.) with 0.0796145900638 using _eqf in
-utest gammaSample 1. 2. with 1. using floatRange 0. inf in
-utest gammaCdf 1. 2. 1. with 0.393469340287 using _eqf in
-utest gammaPpf 0.5 1. 0.5 with 0.227468211559 using _eqf in
+utest gammaPdf 1. 0.5 1. with 0.303265329856 using _eqf in
+utest exp (gammaLogPdf 2. (divf 1. 3.) 1.) with 0.0796145900638 using _eqf in
+utest gammaSample 1. (divf 1. 2.) with 1. using floatRange 0. inf in
+utest gammaCdf 1. 0.5 1. with 0.393469340287 using _eqf in
 
 -- Testing Binomial and Bernoulli
 utest binomialPmf 0.7 20 15 with 0.17886305057 using _eqf in
@@ -346,14 +328,6 @@ utest uniformSample () with 0. using floatRange 0. 1. in
 utest uniformDiscreteSample 3 8 with 3 using intRange 3 8 in
 utest exp (uniformDiscreteLogPdf 1 2 1) with 0.5 using _eqf in
 utest uniformDiscretePdf 1 2 1 with 0.5 using _eqf in
-
--- Testing Discretized Gamma
-utest discretizedGammaSupport 0.5 2. 4 with [0.0290777547619,0.28071453714,0.924773065114,2.76543464298] using eqSeq _eqf in
-utest let s = (discretizedGammaSample 0.5 2. 4) in
-  any (lam x. _eqf x s) [0.0290777547619,0.28071453714,0.924773065114,2.76543464298] with true in
-utest discretizedGammaLogPmf 0.5 2. 4 0.0290777547619 with negf 1.38629436112 using _eqf in
-utest discretizedGammaLogPmf 0.5 2. 4 (negf 1.) with negf inf in
-utest discretizedGammaLogPmf 0.5 2. 4 5. with negf inf in
 
 -- Testing Poisson
 utest poissonPmf 2.0 2 with 0.270670566473 using _eqf in
