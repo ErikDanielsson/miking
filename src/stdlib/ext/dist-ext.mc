@@ -36,15 +36,18 @@ let gammaCdf = lam shape:Float. lam rate:Float. lam x:Float.
   if ltf x 0. then 0.
   else externalGammaCdf x shape rate
 
--- Binomial
-external externalBinomialLogPmf : Int -> Float -> Int -> Float
-external externalBinomialSample ! : Float -> Int -> Int
-let binomialPmf = lam p:Float. lam n:Int. lam x:Int.
-  exp (externalBinomialLogPmf x p n)
-let binomialLogPmf = lam p:Float. lam n:Int. lam x:Int.
-  externalBinomialLogPmf x p n
-let binomialSample = lam p:Float. lam n:Int.
-  externalBinomialSample p n
+-- Binomial, with N trials and success probability theta (as in Stan). Outside
+-- the support {0, ..., N}, the log-pmf is -inf and the pmf is 0, as Stan
+-- rejects them. An invalid N (negative) is passed to Stan.
+external externalBinomialLogPmf : Int -> Int -> Float -> Float
+external externalBinomialSample ! : Int -> Float -> Int
+let binomialLogPmf : Int -> Float -> Int -> Float = lam n. lam theta. lam x.
+  if and (geqi n 0) (or (lti x 0) (gti x n)) then negf inf
+  else externalBinomialLogPmf x n theta
+let binomialPmf : Int -> Float -> Int -> Float = lam n. lam theta. lam x.
+  exp (binomialLogPmf n theta x)
+let binomialSample : Int -> Float -> Int = lam n. lam theta.
+  externalBinomialSample n theta
 
 -- Bernoulli, with success probability theta (as in Stan). The value is a Bool,
 -- so it is always in the support.
@@ -173,7 +176,7 @@ let exponentialPdf : Float -> Float -> Float = lam lambda. lam x.
 let negativeBinomialSample : Int -> Float -> Int = lam n. lam p.
   poissonSample (externalGammaSample (int2float n) (divf p (subf 1. p)))
 let negativeBinomialLogPmf : Int -> Float -> Int -> Float = lam n. lam p. lam x.
-  subf (addf (log (int2float n)) (externalBinomialLogPmf x (subf 1. p) (addi x n))) (log (int2float (addi n x)))
+  subf (addf (log (int2float n)) (binomialLogPmf (addi x n) (subf 1. p) x)) (log (int2float (addi n x)))
 let negativeBinomialPmf: Int -> Float -> Int -> Float = lam n. lam p. lam x.
   exp (negativeBinomialLogPmf n p x)
 
@@ -201,7 +204,7 @@ let lomaxPdf = lam shape: Float. lam scale: Float. lam x:Float.
 -- Beta binomial
 let betabinSample = lam n:Int. lam a: Float. lam b: Float.
   let p = betaSample a b in
-  binomialSample p n
+  binomialSample n p
 
 let betabinLogPmf:Int -> Float -> Float -> Int -> Float = lam n. lam a. lam b. lam x.
   if gti x n then negf inf else
@@ -288,9 +291,9 @@ utest gammaSample 1. (divf 1. 2.) with 1. using floatRange 0. inf in
 utest gammaCdf 1. 0.5 1. with 0.393469340287 using _eqf in
 
 -- Testing Binomial and Bernoulli
-utest binomialPmf 0.7 20 15 with 0.17886305057 using _eqf in
-utest exp (binomialLogPmf 0.5 40 20) with 0.12537068762 using _eqf in
-utest binomialSample 0.7 20 with 0 using intRange 0 20 in
+utest binomialPmf 20 0.7 15 with 0.17886305057 using _eqf in
+utest exp (binomialLogPmf 40 0.5 20) with 0.12537068762 using _eqf in
+utest binomialSample 20 0.7 with 0 using intRange 0 20 in
 utest bernoulliPmf 0.3 false with 0.7 using _eqf in
 utest exp (bernoulliLogPmf 0.6 true) with 0.6 using _eqf in
 utest bernoulliSample 0.6 with false using lam. lam. true in

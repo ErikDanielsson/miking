@@ -80,16 +80,16 @@ let distExtMap =
       }
     ]),
     ("externalBinomialLogPmf", [
-      { expr = "Owl_stats.binomial_logpdf",
-        ty = tyarrows_ [tyint_, otylabel_ "p" tyfloat_, otylabel_ "n" tyint_, tyfloat_],
-        libraries = ["owl"],
+      { expr = "Mi_stats.mi_binomial_lpmf",
+        ty = tyarrows_ [tyint_, tyint_, tyfloat_, tyfloat_],
+        libraries = ["mi_stats"],
         cLibraries = []
       }
     ]),
     ("externalBinomialSample", [
-      { expr = "Owl_stats.binomial_rvs",
-        ty = tyarrows_ [otylabel_ "p" tyfloat_, otylabel_ "n" tyint_, tyint_],
-        libraries = ["owl"],
+      { expr = "Mi_stats.mi_binomial_rng_",
+        ty = tyarrows_ [tyint_, tyfloat_, tyint_],
+        libraries = ["mi_stats"],
         cLibraries = []
       }
     ]),
