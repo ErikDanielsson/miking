@@ -145,24 +145,18 @@ let uniformDiscretePdf : Int -> Int -> Int -> Float = lam a. lam b. lam x.
     else 0.
   else 0.
 
--- Poisson
-let poissonLogPmf = lam lambda:Float. lam x:Int.
-  subf (subf (mulf (int2float x) (log lambda)) lambda) (logFactorial x)
-let poissonPmf = lam lambda:Float. lam x:Int.
+-- Poisson, with rate lambda (as in Stan, mean lambda). Outside the support
+-- {0, 1, ...}, the log-pmf is -inf and the pmf is 0, as Stan rejects negative
+-- values.
+external externalPoissonLogPmf : Int -> Float -> Float
+external externalPoissonSample ! : Float -> Int
+let poissonLogPmf : Float -> Int -> Float = lam lambda. lam x.
+  if lti x 0 then negf inf
+  else externalPoissonLogPmf x lambda
+let poissonPmf : Float -> Int -> Float = lam lambda. lam x.
   exp (poissonLogPmf lambda x)
--- Simple but inefficient algorithm for drawing from Poisson. Translated from
--- numpy C source code and originally from Knuth according to Wikipedia.
--- OPT(dlunde,2022-05-16): We want to use an external for this eventually.
-let poissonSample = lam lambda:Float.
-  let enlam = exp (negf lambda) in
-  let x = 0 in
-  let prod = 1. in
-  recursive let rec = lam x. lam prod.
-    let u = uniformSample () in
-    let prod = mulf prod u in
-    if gtf prod enlam then rec (addi x 1) prod
-    else x
-  in rec x prod
+let poissonSample : Float -> Int = lam lambda.
+  externalPoissonSample lambda
 
 -- Exponential, with rate beta as in Stan (mean 1 / beta). Outside the support
 -- [0, inf), the log-pdf is -inf, as Stan rejects negative values.
