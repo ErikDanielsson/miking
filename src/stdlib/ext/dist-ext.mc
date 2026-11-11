@@ -176,17 +176,21 @@ let exponentialPdf : Float -> Float -> Float = lam beta. lam x.
 let exponentialSample : Float -> Float = lam beta.
   externalExponentialSample beta
 
--- Negative Binomial
-let negativeBinomialSample : Int -> Float -> Int = lam n. lam p.
-  poissonSample (externalGammaSample (int2float n) (divf p (subf 1. p)))
-let negativeBinomialLogPmf : Int -> Float -> Int -> Float = lam n. lam p. lam x.
-  subf (addf (log (int2float n)) (binomialLogPmf (addi x n) (subf 1. p) x)) (log (int2float (addi n x)))
-let negativeBinomialPmf: Int -> Float -> Int -> Float = lam n. lam p. lam x.
-  exp (negativeBinomialLogPmf n p x)
+-- Negative binomial, with shape alpha and inverse scale beta (as in Stan, mean alpha / beta).
+-- Outside the support {0, 1, ...}, the log-pmf is -inf, as Stan rejects those values.
+external externalNegBinomialLogPmf : Int -> Float -> Float -> Float
+external externalNegBinomialSample ! : Float -> Float -> Int
+let negBinomialLogPmf : Float -> Float -> Int -> Float = lam alpha. lam beta. lam x.
+  if lti x 0 then negf inf
+  else externalNegBinomialLogPmf x alpha beta
+let negBinomialPmf : Float -> Float -> Int -> Float = lam alpha. lam beta. lam x.
+  exp (negBinomialLogPmf alpha beta x)
+let negBinomialSample : Float -> Float -> Int = lam alpha. lam beta.
+  externalNegBinomialSample alpha beta
 
 -- Geometric
 let geometricSample : Float -> Int = lam p.
-  negativeBinomialSample 1 p
+  negBinomialSample 1. (divf p (subf 1. p))
 let geometricLogPmf : Float -> Int -> Float = lam p. lam x.
   addf (mulf (int2float x) (log (subf 1. p))) (log p)
 let geometricPmf : Float -> Int -> Float = lam p. lam x.
@@ -351,11 +355,11 @@ utest exp (exponentialLogPdf 1.0 2.0) with 0.135335283237 using _eqf in
 utest exponentialPdf 2.0 2.0 with 0.0366312777775 using _eqf in
 
 -- Testing Negative Binomial
-utest exp (negativeBinomialLogPmf 6 0.3 1) with 0.0030618 using _eqf in
-utest negativeBinomialPmf 6 0.3 3 with 0.014002632 using _eqf in
-utest exp (negativeBinomialLogPmf 6 0.3 5) with 0.03087580356 using _eqf in
-utest negativeBinomialPmf 6 0.3 7 with 0.0475487374824 using _eqf in
-utest negativeBinomialSample 6 0.3 with 0 using geqi in
+utest exp (negBinomialLogPmf 6. (divf 0.3 (subf 1. 0.3)) 1) with 0.0030618 using _eqf in
+utest negBinomialPmf 6. (divf 0.3 (subf 1. 0.3)) 3 with 0.014002632 using _eqf in
+utest exp (negBinomialLogPmf 6. (divf 0.3 (subf 1. 0.3)) 5) with 0.03087580356 using _eqf in
+utest negBinomialPmf 6. (divf 0.3 (subf 1. 0.3)) 7 with 0.0475487374824 using _eqf in
+utest negBinomialSample 6. (divf 0.3 (subf 1. 0.3)) with 0 using geqi in
 
 -- Testing Geometric
 utest geometricPmf 0.3 0 with 0.3 using _eqf in
