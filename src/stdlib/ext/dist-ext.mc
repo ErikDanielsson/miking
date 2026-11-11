@@ -183,18 +183,18 @@ let geometricLogPmf : Float -> Int -> Float = lam p. lam x.
 let geometricPmf : Float -> Int -> Float = lam p. lam x.
   exp (geometricLogPmf p x)
 
--- Lomax
-external externalLomaxLogPdf : Float -> Float -> Float -> Float
-external externalLomaxSample ! : Float -> Float -> Float
-let lomaxSample = lam shape: Float. lam scale: Float.
-  externalLomaxSample shape scale
-let lomaxLogPdf:Float -> Float -> Float -> Float = lam shape. lam scale. lam x.
-  if ltf x 0. then negf inf else
-  let lhs = subf (log shape) (log scale)  in
-  let rhs = mulf (log (addf (divf x scale) 1.)) (addf shape 1.) in
-  subf lhs rhs
-let lomaxPdf = lam shape: Float. lam scale: Float. lam x:Float.
-  exp (lomaxLogPdf shape scale x)
+-- Pareto type 2 (Lomax when mu = 0), with location mu, scale lambda and
+-- shape alpha (as in Stan). Outside the support [mu, inf), the log-pdf is -inf
+-- and the pdf is 0, as Stan rejects values below mu. +inf is passed to Stan.
+external externalParetoType2LogPdf : Float -> Float -> Float -> Float -> Float
+external externalParetoType2Sample ! : Float -> Float -> Float -> Float
+let paretoType2LogPdf : Float -> Float -> Float -> Float -> Float = lam mu. lam lambda. lam alpha. lam x.
+  if ltf x mu then negf inf
+  else externalParetoType2LogPdf x mu lambda alpha
+let paretoType2Pdf : Float -> Float -> Float -> Float -> Float = lam mu. lam lambda. lam alpha. lam x.
+  exp (paretoType2LogPdf mu lambda alpha x)
+let paretoType2Sample : Float -> Float -> Float -> Float = lam mu. lam lambda. lam alpha.
+  externalParetoType2Sample mu lambda alpha
 
 -- Beta-binomial, with N trials and shape parameters alpha and beta (as in
 -- Stan). Outside the support {0, ..., N}, the log-pmf is -inf and the pmf is 0,

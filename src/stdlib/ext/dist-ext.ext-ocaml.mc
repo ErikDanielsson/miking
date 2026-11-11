@@ -226,17 +226,17 @@ let distExtMap =
         cLibraries = []
       }
     ]),
-    ("externalLomaxSample", [
-      { expr = "Owl_stats.lomax_rvs",
-        ty = tyarrows_ [tyfloat_, tyfloat_, tyfloat_],
-        libraries = ["owl"],
+    ("externalParetoType2Sample", [
+      { expr = "Mi_stats.mi_pareto_type_2_rng_",
+        ty = tyarrows_ [tyfloat_, tyfloat_, tyfloat_, tyfloat_],
+        libraries = ["mi_stats"],
         cLibraries = []
       }
     ]),
-    ("externalLomaxLogPdf", [
-      { expr = "Owl_stats.lomax_logpdf",
-        ty = tyarrows_ [tyfloat_, otylabel_ "shape" tyfloat_, otylabel_ "scale" tyfloat_, tyfloat_],
-        libraries = ["owl"],
+    ("externalParetoType2LogPdf", [
+      { expr = "Mi_stats.mi_pareto_type_2_lpdf",
+        ty = tyarrows_ [tyfloat_, tyfloat_, tyfloat_, tyfloat_, tyfloat_],
+        libraries = ["mi_stats"],
         cLibraries = []
       }
     ]),
