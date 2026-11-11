@@ -164,14 +164,17 @@ let poissonSample = lam lambda:Float.
     else x
   in rec x prod
 
--- Add exponential
+-- Exponential, with rate beta as in Stan (mean 1 / beta). Outside the support
+-- [0, inf), the log-pdf is -inf, as Stan rejects negative values.
+external externalExponentialLogPdf : Float -> Float -> Float
 external externalExponentialSample ! : Float -> Float
-let exponentialSample = lam lambda:Float.
-  externalExponentialSample lambda
-let exponentialLogPdf : Float -> Float -> Float = lam lambda. lam x.
-  subf (log lambda) (mulf lambda x)
-let exponentialPdf : Float -> Float -> Float = lam lambda. lam x.
-  exp (exponentialLogPdf lambda x)
+let exponentialLogPdf : Float -> Float -> Float = lam beta. lam x.
+  if ltf x 0. then negf inf
+  else externalExponentialLogPdf x beta
+let exponentialPdf : Float -> Float -> Float = lam beta. lam x.
+  exp (exponentialLogPdf beta x)
+let exponentialSample : Float -> Float = lam beta.
+  externalExponentialSample beta
 
 -- Negative Binomial
 let negativeBinomialSample : Int -> Float -> Int = lam n. lam p.
