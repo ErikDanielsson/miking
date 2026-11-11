@@ -4,21 +4,22 @@ include "seq.mc"
 include "ext/math-ext.mc"
 include "float.mc"
 
--- Chi2
-external externalChi2LogPdf : Float -> Float -> Float
-external externalChi2Sample ! : Float -> Float
-external externalChi2Cdf : Float -> Float -> Float
-external externalChi2Ppf : Float -> Float -> Float
-let chi2Pdf = lam df:Int. lam x:Float.
-  exp (externalChi2LogPdf x (int2float df))
-let chi2LogPdf = lam df:Int. lam x:Float.
-  externalChi2LogPdf x (int2float df)
-let chi2Sample = lam df:Int.
-  externalChi2Sample (int2float df)
-let chi2Cdf = lam df:Int. lam x:Float.
-  externalChi2Cdf x (int2float df)
-let chi2Ppf = lam df:Int. lam q:Float.
-  externalChi2Ppf q (int2float df)
+-- Chi-square, with degrees of freedom nu (as in Stan). Outside the support
+-- [0, inf), the log-pdf is -inf and the cdf is 0 below, as Stan rejects -inf
+-- and negative values. The pdf is 0 where the log-pdf is -inf.
+external externalChiSquareLogPdf : Float -> Float -> Float
+external externalChiSquareSample ! : Float -> Float
+external externalChiSquareCdf : Float -> Float -> Float
+let chiSquareLogPdf : Float -> Float -> Float = lam nu. lam x.
+  if ltf x 0. then negf inf
+  else externalChiSquareLogPdf x nu
+let chiSquarePdf : Float -> Float -> Float = lam nu. lam x.
+  exp (chiSquareLogPdf nu x)
+let chiSquareSample : Float -> Float = lam nu.
+  externalChiSquareSample nu
+let chiSquareCdf : Float -> Float -> Float = lam nu. lam x.
+  if ltf x 0. then 0.
+  else externalChiSquareCdf x nu
 
 -- Gamma, with shape and rate as in Stan. Outside the support (0, inf), the
 -- log-pdf is -inf and the cdf is 0 below and 1 above, as Stan rejects them.
@@ -275,12 +276,11 @@ let intRange = lam lower. lam upper. lam r. lam l.
 let floatRange = lam lower. lam upper. lam r. lam l.
   and (and (leqf r upper) (geqf r lower)) (and (leqf l upper) (geqf l lower)) in
 
--- Testing Chi2
-utest chi2Pdf 5 0.5 with 0.0366159407890 using _eqf in
-utest exp (chi2LogPdf 6 3.2) with 0.1292137715166 using _eqf in
-utest chi2Sample 6 with 1. using floatRange 0. inf in
-utest chi2Cdf 4 4.1 with 0.6073585440572 using _eqf in
-utest chi2Ppf 3 0.95 with 7.8147279032512 using _eqf in
+-- Testing Chi-square
+utest chiSquarePdf 5. 0.5 with 0.0366159407890 using _eqf in
+utest exp (chiSquareLogPdf 6. 3.2) with 0.1292137715166 using _eqf in
+utest chiSquareSample 6. with 1. using floatRange 0. inf in
+utest chiSquareCdf 4. 4.1 with 0.6073585440572 using _eqf in
 
 -- Testing Gamma
 utest gammaPdf 1. 0.5 1. with 0.303265329856 using _eqf in

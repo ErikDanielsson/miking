@@ -9,32 +9,25 @@ let distExtMap =
   use OCamlTypeAst in
   mapFromSeq cmpString
   [
-    ("externalChi2LogPdf", [
-      { expr = "Owl_stats.chi2_logpdf",
-        ty = tyarrows_ [tyfloat_, otylabel_ "df" tyfloat_, tyfloat_],
-        libraries = ["owl"],
+    ("externalChiSquareLogPdf", [
+      { expr = "Mi_stats.mi_chi_square_lpdf",
+        ty = tyarrows_ [tyfloat_, tyfloat_, tyfloat_],
+        libraries = ["mi_stats"],
         cLibraries = []
       }
     ]),
-    ("externalChi2Sample", [
-      { expr = "Owl_stats.chi2_rvs",
-        ty = tyarrows_ [otylabel_ "df" tyfloat_, tyfloat_],
-        libraries = ["owl"],
+    ("externalChiSquareSample", [
+      { expr = "Mi_stats.mi_chi_square_rng_",
+        ty = tyarrows_ [tyfloat_, tyfloat_],
+        libraries = ["mi_stats"],
         cLibraries = []
       }
     ]),
-    ("externalChi2Cdf", [
-      { expr = "Owl_stats.chi2_cdf",
-       ty = tyarrows_ [tyfloat_, otylabel_ "df" tyfloat_, tyfloat_],
-       libraries = ["owl"],
-       cLibraries = []
-       }
-    ]),
-    ("externalChi2Ppf", [
-      { expr = "Owl_stats.chi2_ppf",
-      ty = tyarrows_ [tyfloat_, otylabel_ "df" tyfloat_, tyfloat_],
-      libraries =["owl"],
-      cLibraries = []
+    ("externalChiSquareCdf", [
+      { expr = "Mi_stats.mi_chi_square_cdf",
+        ty = tyarrows_ [tyfloat_, tyfloat_, tyfloat_],
+        libraries = ["mi_stats"],
+        cLibraries = []
       }
     ]),
     ("externalExponentialSample", [
