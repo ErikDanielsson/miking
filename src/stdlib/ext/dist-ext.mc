@@ -130,20 +130,18 @@ let uniformContinuousPdf = lam a. lam b. lam x.
 -- Uniform on 0 1
 let uniformSample : () -> Float = lam. uniformContinuousSample 0. 1.
 
--- Random (discrete)
-external externalUniformDiscreteSample ! : Int -> Int -> Int
-let uniformDiscreteSample = lam a:Int. lam b:Int.
-  externalUniformDiscreteSample a b
-let uniformDiscreteLogPdf : Int -> Int -> Int -> Float = lam a. lam b. lam x.
-  if geqi x a then
-    if leqi x b then subf (log 1.0) (log (int2float (addi 1 (subi b a))))
-    else log 0.
-  else log 0.
-let uniformDiscretePdf : Int -> Int -> Int -> Float = lam a. lam b. lam x.
-  if geqi x a then
-    if leqi x b then divf 1.0 (int2float (addi 1 (subi b a)))
-    else 0.
-  else 0.
+-- Discrete range, uniform over the integers lower, ..., upper (inclusive, as in
+-- Stan). Outside the support, the log-pmf is -inf and the pmf is 0, as Stan
+-- returns -inf there. Invalid bounds (lower > upper) are passed to Stan.
+external externalDiscreteRangeLogPmf : Int -> Int -> Int -> Float
+external externalDiscreteRangeSample ! : Int -> Int -> Int
+let discreteRangeLogPmf : Int -> Int -> Int -> Float = lam lower. lam upper. lam x.
+  if and (leqi lower upper) (or (lti x lower) (gti x upper)) then negf inf
+  else externalDiscreteRangeLogPmf x lower upper
+let discreteRangePmf : Int -> Int -> Int -> Float = lam lower. lam upper. lam x.
+  exp (discreteRangeLogPmf lower upper x)
+let discreteRangeSample : Int -> Int -> Int = lam lower. lam upper.
+  externalDiscreteRangeSample lower upper
 
 -- Poisson, with rate lambda (as in Stan, mean lambda). Outside the support
 -- {0, 1, ...}, the log-pmf is -inf and the pmf is 0, as Stan rejects negative
@@ -333,10 +331,10 @@ utest uniformContinuousPdf 1.0 2.0 1.5 with 1.0 using _eqf in
 -- Testing (0,1)-uniform
 utest uniformSample () with 0. using floatRange 0. 1. in
 
--- Testing Discrete uniform
-utest uniformDiscreteSample 3 8 with 3 using intRange 3 8 in
-utest exp (uniformDiscreteLogPdf 1 2 1) with 0.5 using _eqf in
-utest uniformDiscretePdf 1 2 1 with 0.5 using _eqf in
+-- Testing Discrete range
+utest discreteRangeSample 3 8 with 3 using intRange 3 8 in
+utest exp (discreteRangeLogPmf 1 2 1) with 0.5 using _eqf in
+utest discreteRangePmf 1 2 1 with 0.5 using _eqf in
 
 -- Testing Poisson
 utest poissonPmf 2.0 2 with 0.270670566473 using _eqf in

@@ -205,10 +205,17 @@ let distExtMap =
         cLibraries = []
       }
     ]),
-    ("externalUniformDiscreteSample", [
-      { expr = "Owl_stats.uniform_int_rvs",
+    ("externalDiscreteRangeLogPmf", [
+      { expr = "Mi_stats.mi_discrete_range_lpmf",
+        ty = tyarrows_ [tyint_, tyint_, tyint_, tyfloat_],
+        libraries = ["mi_stats"],
+        cLibraries = []
+      }
+    ]),
+    ("externalDiscreteRangeSample", [
+      { expr = "Mi_stats.mi_discrete_range_rng_",
         ty = tyarrows_ [tyint_, tyint_, tyint_],
-        libraries = ["owl"],
+        libraries = ["mi_stats"],
         cLibraries = []
       }
     ]),
