@@ -57,15 +57,17 @@ let bernoulliLogPmf : Float -> Bool -> Float = lam theta. lam x.
 let bernoulliSample : Float -> Bool = lam theta.
   externalBernoulliSample theta
 
--- Beta
+-- Beta, with shape parameters alpha and beta (as in Stan). Outside the support
+-- [0, 1], the log-pdf is -inf and the pdf is 0, as Stan rejects them.
 external externalBetaLogPdf : Float -> Float -> Float -> Float
 external externalBetaSample ! : Float -> Float -> Float
-let betaPdf = lam a:Float. lam b:Float. lam x:Float.
-  exp (externalBetaLogPdf x a b)
-let betaLogPdf = lam a:Float. lam b:Float. lam x:Float.
-  externalBetaLogPdf x a b
-let betaSample = lam a:Float. lam b:Float.
-  externalBetaSample a b
+let betaLogPdf : Float -> Float -> Float -> Float = lam alpha. lam beta. lam x.
+  if or (ltf x 0.) (gtf x 1.) then negf inf
+  else externalBetaLogPdf x alpha beta
+let betaPdf : Float -> Float -> Float -> Float = lam alpha. lam beta. lam x.
+  exp (betaLogPdf alpha beta x)
+let betaSample : Float -> Float -> Float = lam alpha. lam beta.
+  externalBetaSample alpha beta
 
 -- Normal, with mean mu and standard deviation sigma (as in Stan)
 external externalNormalLogPdf : Float -> Float -> Float -> Float

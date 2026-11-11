@@ -94,16 +94,16 @@ let distExtMap =
       }
     ]),
     ("externalBetaLogPdf", [
-      { expr = "Owl_stats.beta_logpdf",
-        ty = tyarrows_ [tyfloat_, otylabel_ "a" tyfloat_, otylabel_ "b" tyfloat_, tyfloat_],
-        libraries = ["owl"],
+      { expr = "Mi_stats.mi_beta_lpdf",
+        ty = tyarrows_ [tyfloat_, tyfloat_, tyfloat_, tyfloat_],
+        libraries = ["mi_stats"],
         cLibraries = []
       }
     ]),
     ("externalBetaSample", [
-      { expr = "Owl_stats.beta_rvs",
-        ty = tyarrows_ [otylabel_ "a" tyfloat_, otylabel_ "b" tyfloat_, tyfloat_],
-        libraries = ["owl"],
+      { expr = "Mi_stats.mi_beta_rng_",
+        ty = tyarrows_ [tyfloat_, tyfloat_, tyfloat_],
+        libraries = ["mi_stats"],
         cLibraries = []
       }
     ]),
