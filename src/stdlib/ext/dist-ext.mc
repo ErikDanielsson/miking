@@ -201,20 +201,18 @@ let lomaxLogPdf:Float -> Float -> Float -> Float = lam shape. lam scale. lam x.
 let lomaxPdf = lam shape: Float. lam scale: Float. lam x:Float.
   exp (lomaxLogPdf shape scale x)
 
--- Beta binomial
-let betabinSample = lam n:Int. lam a: Float. lam b: Float.
-  let p = betaSample a b in
-  binomialSample n p
-
-let betabinLogPmf:Int -> Float -> Float -> Int -> Float = lam n. lam a. lam b. lam x.
-  if gti x n then negf inf else
-  let lbeta1 = addf (subf (logGamma (addf a (int2float x))) (logGamma (addf (int2float n) (addf a b)))) (logGamma (addf b (int2float (subi n x))))  in
-  let lbeta2 = addf (subf (logGamma a) (logGamma (addf a b))) (logGamma b)  in
-  let lcomb = (logCombination n x) in
-  addf lcomb (subf lbeta1 lbeta2)
-
-let betabinPmf = lam n:Int. lam a: Float. lam b: Float. lam x:Int.
-  exp (betabinLogPmf n a b x)
+-- Beta-binomial, with N trials and shape parameters alpha and beta (as in
+-- Stan). Outside the support {0, ..., N}, the log-pmf is -inf and the pmf is 0,
+-- as Stan returns -inf there. An invalid N (negative) is passed to Stan.
+external externalBetaBinomialLogPmf : Int -> Int -> Float -> Float -> Float
+external externalBetaBinomialSample ! : Int -> Float -> Float -> Int
+let betaBinomialLogPmf : Int -> Float -> Float -> Int -> Float = lam n. lam alpha. lam beta. lam x.
+  if and (geqi n 0) (or (lti x 0) (gti x n)) then negf inf
+  else externalBetaBinomialLogPmf x n alpha beta
+let betaBinomialPmf : Int -> Float -> Float -> Int -> Float = lam n. lam alpha. lam beta. lam x.
+  exp (betaBinomialLogPmf n alpha beta x)
+let betaBinomialSample : Int -> Float -> Float -> Int = lam n. lam alpha. lam beta.
+  externalBetaBinomialSample n alpha beta
 
 -- Reciprocal (or log uniform) distribution
 let reciprocalSample : Float -> Float -> Float = lam a. lam b.
@@ -364,10 +362,10 @@ utest exp (geometricLogPmf 0.3 3) with 0.1029 using _eqf in
 utest geometricSample 0.3 with 0 using geqi in
 
 -- Testing Beta-Binomial
-utest betabinLogPmf 5 1. 1. 2 with -1.79175946923 using _eqf in
-utest exp (betabinLogPmf 5 1. 1. 3) with 0.166666666667 using _eqf in
-utest betabinPmf 5 1. 1. 3 with 0.166666666667 using _eqf in
-utest betabinSample 20 1. 1. with 0 using intRange 0 20 in
+utest betaBinomialLogPmf 5 1. 1. 2 with -1.79175946923 using _eqf in
+utest exp (betaBinomialLogPmf 5 1. 1. 3) with 0.166666666667 using _eqf in
+utest betaBinomialPmf 5 1. 1. 3 with 0.166666666667 using _eqf in
+utest betaBinomialSample 20 1. 1. with 0 using intRange 0 20 in
 
 -- Testing Reciprocal
 utest reciprocalLogPdf 1. 2. 1.5 with -0.038952187526 using _eqf in
