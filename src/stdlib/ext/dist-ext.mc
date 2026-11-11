@@ -112,23 +112,18 @@ let dirichletPdf : [Float] -> [Float] -> Float =
 let dirichletSample : [Float] -> [Float] =
   lam alpha. externalDirichletSample alpha
 
--- Uniform (continuous between a and b)
-external externalUniformContinuousSample ! : Float -> Float -> Float
-let uniformContinuousSample = lam a. lam b.
-  externalUniformContinuousSample a b
-let uniformContinuousLogPdf = lam a. lam b. lam x.
-  if geqf x a then
-    if leqf x b then subf (log 1.0) (log (subf b a))
-    else log 0.
-  else log 0.
-let uniformContinuousPdf = lam a. lam b. lam x.
-  if geqf x a then
-    if leqf x b then divf 1.0 (subf b a)
-    else 0.
-  else 0.
+-- Uniform, with lower bound alpha and upper bound beta (as in Stan)
+external externalUniformLogPdf : Float -> Float -> Float -> Float
+external externalUniformSample ! : Float -> Float -> Float
+let uniformPdf : Float -> Float -> Float -> Float = lam alpha. lam beta. lam x.
+  exp (externalUniformLogPdf x alpha beta)
+let uniformLogPdf : Float -> Float -> Float -> Float = lam alpha. lam beta. lam x.
+  externalUniformLogPdf x alpha beta
+let uniformSample : Float -> Float -> Float = lam alpha. lam beta.
+  externalUniformSample alpha beta
 
 -- Uniform on 0 1
-let uniformSample : () -> Float = lam. uniformContinuousSample 0. 1.
+let uniform01Sample : () -> Float = lam. uniformSample 0. 1.
 
 -- Discrete range, uniform over the integers lower, ..., upper (inclusive, as in
 -- Stan). Outside the support, the log-pmf is -inf and the pmf is 0, as Stan
@@ -216,7 +211,7 @@ let betaBinomialSample : Int -> Float -> Float -> Int = lam n. lam alpha. lam be
 
 -- Reciprocal (or log uniform) distribution
 let reciprocalSample : Float -> Float -> Float = lam a. lam b.
-  let logSample = uniformContinuousSample (log a) (log b) in
+  let logSample = uniformSample (log a) (log b) in
   exp logSample
 
 let reciprocalPdf : Float -> Float -> Float -> Float = lam a. lam b. lam x.
@@ -323,13 +318,13 @@ utest dirichletPdf [1.0, 1.0, 2.0] [0.01, 0.01, 0.98] with 5.88 using _eqf in
 utest dirichletSample [5.0, 5.0, 5.0] with [0.] using
   lam l. lam r. _eqf (foldl addf 0. l) 1.0 in
 
--- Testing Continuous uniform
-utest uniformContinuousSample 1.0 2.0 with 0. using floatRange 0. 2. in
-utest exp (uniformContinuousLogPdf 1.0 2.0 1.5) with 1.0 using _eqf in
-utest uniformContinuousPdf 1.0 2.0 1.5 with 1.0 using _eqf in
+-- Testing Uniform
+utest uniformSample 1.0 2.0 with 0. using floatRange 0. 2. in
+utest exp (uniformLogPdf 1.0 2.0 1.5) with 1.0 using _eqf in
+utest uniformPdf 1.0 2.0 1.5 with 1.0 using _eqf in
 
 -- Testing (0,1)-uniform
-utest uniformSample () with 0. using floatRange 0. 1. in
+utest uniform01Sample () with 0. using floatRange 0. 1. in
 
 -- Testing Discrete range
 utest discreteRangeSample 3 8 with 3 using intRange 3 8 in
@@ -392,13 +387,13 @@ utest let s = treeInferenceCategoricalSample pTest pairSetsTest in
 with true in
 
 -- Testing seed
-utest setSeed 0; uniformSample (); uniformSample ()
-with setSeed 0; uniformSample (); uniformSample () in
+utest setSeed 0; uniform01Sample (); uniform01Sample ()
+with setSeed 0; uniform01Sample (); uniform01Sample () in
 utest setSeed 0; normalSample 0. 1.; normalSample 0. 1.
 with  setSeed 0; normalSample 0. 1.; normalSample 0. 1. in
-utest setSeed 0; uniformSample (); normalSample 0. 1.
-with  setSeed 0; uniformSample (); normalSample 0. 1. in
-utest setSeed 0; normalSample 0. 1.; normalSample 0. 1.; uniformSample ()
-with  setSeed 0; normalSample 0. 1.; normalSample 0. 1.; uniformSample () in
+utest setSeed 0; uniform01Sample (); normalSample 0. 1.
+with  setSeed 0; uniform01Sample (); normalSample 0. 1. in
+utest setSeed 0; normalSample 0. 1.; normalSample 0. 1.; uniform01Sample ()
+with  setSeed 0; normalSample 0. 1.; normalSample 0. 1.; uniform01Sample () in
 
 ()

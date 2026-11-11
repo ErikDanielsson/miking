@@ -198,10 +198,17 @@ let distExtMap =
         cLibraries = []
       }
     ]),
-    ("externalUniformContinuousSample", [
-      { expr = "Owl_stats.uniform_rvs",
+    ("externalUniformLogPdf", [
+      { expr = "Mi_stats.mi_uniform_lpdf",
+        ty = tyarrows_ [tyfloat_, tyfloat_, tyfloat_, tyfloat_],
+        libraries = ["mi_stats"],
+        cLibraries = []
+      }
+    ]),
+    ("externalUniformSample", [
+      { expr = "Mi_stats.mi_uniform_rng_",
         ty = tyarrows_ [tyfloat_, tyfloat_, tyfloat_],
-        libraries = ["owl"],
+        libraries = ["mi_stats"],
         cLibraries = []
       }
     ]),
