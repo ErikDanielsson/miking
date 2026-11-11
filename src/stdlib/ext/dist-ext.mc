@@ -36,7 +36,7 @@ let gammaCdf = lam shape:Float. lam rate:Float. lam x:Float.
   if ltf x 0. then 0.
   else externalGammaCdf x shape rate
 
--- Binomial and Bernoulli
+-- Binomial
 external externalBinomialLogPmf : Int -> Float -> Int -> Float
 external externalBinomialSample ! : Float -> Int -> Int
 let binomialPmf = lam p:Float. lam n:Int. lam x:Int.
@@ -45,12 +45,17 @@ let binomialLogPmf = lam p:Float. lam n:Int. lam x:Int.
   externalBinomialLogPmf x p n
 let binomialSample = lam p:Float. lam n:Int.
   externalBinomialSample p n
-let bernoulliPmf = lam p:Float. lam x:Bool.
-  if x then p else subf 1. p
-let bernoulliLogPmf = lam p:Float. lam x:Bool.
-  log (bernoulliPmf p x)
-let bernoulliSample = lam p:Float.
-  if eqi 1 (externalBinomialSample p 1) then true else false
+
+-- Bernoulli, with success probability theta (as in Stan). The value is a Bool,
+-- so it is always in the support.
+external externalBernoulliLogPmf : Bool -> Float -> Float
+external externalBernoulliSample ! : Float -> Bool
+let bernoulliPmf : Float -> Bool -> Float = lam theta. lam x.
+  exp (externalBernoulliLogPmf x theta)
+let bernoulliLogPmf : Float -> Bool -> Float = lam theta. lam x.
+  externalBernoulliLogPmf x theta
+let bernoulliSample : Float -> Bool = lam theta.
+  externalBernoulliSample theta
 
 -- Beta
 external externalBetaLogPdf : Float -> Float -> Float -> Float
